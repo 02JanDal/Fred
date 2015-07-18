@@ -21,15 +21,27 @@ class FormatterClass
   constructor: ->
     @formatters = {}
     @typeMatchers = []
+    @staticFormatters = {}
+    @staticLabels = {}
   add: (type, func) ->
     @formatters[type] = func;
     return @
   addMatcher: (match, type) ->
     @typeMatchers.push { match: match, type: type }
     return @
+  addStatic: (type, func) ->
+    @staticFormatters[type] = func;
+    return @
+  addStaticLabel: (type, label) ->
+    @staticLabels[type] = label;
+    return @
   format: (type, value) ->
     return '' if value == null
     return if @formatters[type] then @formatters[type](value) else value;
+  formatStatic: (type, value) ->
+    return 0 if value == null
+    return if @staticFormatters[type] then @staticFormatters[type](value) else value;
+  staticLabel: (type) -> return @staticLabels[type]
   type: (string) ->
     return (_.find(@typeMatchers, (matcher) -> string.match(matcher.match) != null) || {type:null}).type;
 window.Formatter = new FormatterClass

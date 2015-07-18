@@ -1,5 +1,7 @@
 #!/bin/sh
 
 cp $COMMONDIR/*.* .
+wget -nc https://raw.githubusercontent.com/sandstorm-io/capnproto/master/c%2B%2B/cmake/FindCapnProto.cmake
+wget -nc https://raw.githubusercontent.com/google/flatbuffers/master/CMake/FindFlatBuffers.cmake
 cmake $SRCDIR
 make || exit 1

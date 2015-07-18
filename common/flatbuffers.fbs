@@ -1,0 +1,15 @@
+namespace Fred;
+
+table WonkoVersion {
+	version:string;
+	type:string;
+	time:uint;
+}
+
+table WonkoFile {
+	uid:string;
+	name:string;
+	versions:[WonkoVersion];
+}
+
+root_type WonkoFile;

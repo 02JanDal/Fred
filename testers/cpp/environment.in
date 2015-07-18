@@ -1,16 +1,18 @@
-#!/bin/sh
+#!/usr/bin/env ruby
 
-dir=$PWD
-cd @QMSGPACK_SRC_DIR@
-qmsgpack_version=$(git rev-parse HEAD)
-cd $dir
+if "@QMSGPACK_SRC_DIR@" != ""
+  olddir = Dir.pwd
+  Dir.chdir "@QMSGPACK_SRC_DIR@"
+  puts "environment: msgpack cpp qmsgpack qmsgpack-version #{`git rev-parse HEAD`}"
+  Dir.chdir olddir
+end
 
-echo "environment: - {c,cpp} - cmake-version @CMAKE_VERSION@"
-echo "environment: - c - c-compiler $(@CMAKE_C_COMPILER@ --version | head -1)"
-echo "environment: - cpp - cpp-compiler $(@CMAKE_CXX_COMPILER@ --version | head -1)"
-echo "environment: - {c,cpp} - c-cpp-linker $(@CMAKE_LINKER@ --version | head -1)"
-echo "environment: json cpp rapidjson rapidjson-version @RapidJSON_VERSION@"
-echo "environment: json cpp qt qt5-version @Qt5Core_VERSION@"
-echo "environment: msgpack cpp qmsgpack qmsgpack-version $qmsgpack_version"
-echo "environment: msgpack cpp msgpack-c msgpack-c-version @MSGPACK_VERSION@"
-echo "environment: bson cpp libbson libbson-version @LIBBSON_VERSION@"
+puts "environment: - {c,cpp} - cmake-version @CMAKE_VERSION@"
+puts "environment: - c - c-compiler #{`@CMAKE_C_COMPILER@ --version | head -1`}"
+puts "environment: - cpp - cpp-compiler #{`@CMAKE_CXX_COMPILER@ --version | head -1`}"
+puts "environment: - {c,cpp} - c-cpp-linker #{`@CMAKE_LINKER@ --version | head -1`}"
+puts "environment: json cpp rapidjson rapidjson-version @RapidJSON_VERSION@" unless "@RapidJSON_VERSION@".empty?
+puts "environment: json cpp qt qt5-version @Qt5Core_VERSION@" unless "@Qt5Core_VERSION@".empty?
+puts "environment: msgpack cpp msgpack-c msgpack-c-version @MSGPACK_VERSION@" unless "@MSGPACK_VERSION@".empty?
+puts "environment: bson cpp libbson libbson-version @LIBBSON_VERSION@" unless "@LIBBSON_VERSION@".empty?
+puts "environment: capnproto cpp - capnproto-version #{`@CAPNP_EXECUTABLE@ --version | grep -oP "\d\.\d\.\d"`}" unless "@CAPNP_EXECUTABLE@".empty?

@@ -1,8 +1,19 @@
 Usage: `rake`, then open `build/results.html` in your favourite browser.
 
+# Contributing
+
+New benchmarks for new languages, formats or implementations are welcome as PRs. Also fixes to the framework, though that's a lower priority.
+
+Because of the mix of languages there is no real coding standard. Try to adapt to the file you are currently editing, or files that do something similar.
+
 # Formats
 
 * [protobuf](https://github.com/google/protobuf)
+  * [C++](https://developers.google.com/protocol-buffers/docs/cpptutorial)
+  * [Java](https://developers.google.com/protocol-buffers/docs/javatutorial)
+  * [Python](https://developers.google.com/protocol-buffers/docs/pythontutorial)
+  * [JavaScript](https://github.com/dcodeIO/ProtoBuf.js)
+  * [Ruby](https://github.com/protobuf-ruby/beefcake)
 * [JSON](http://json.org/)
   * [Qt](http://doc.qt.io/qt-5/json.html)
   * [C++](https://github.com/miloyip/rapidjson)

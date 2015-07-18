@@ -37,9 +37,9 @@
     <script type="text/javascript">
       Humanizer.add(/json/gi, 'JSON')
         .add(/bson/gi, 'BSON')
-        .add(/^msgpack$/i, 'MessagePack')
-        .add('Msgpack c', 'msgpack-c')
+        .add(/^msgpack$/i, 'MessagePack').add('Msgpack c', 'msgpack-c')
         .add('Qmsgpack', 'QMsgPack')
+        .add(/capnproto/gi, 'Cap\'n Proto')
         .add(/libbson/gi, 'libbson')
         .add(/gz/gi, 'gzip\'d').add(/gzip'dip/gi, 'GZip')
         .add(/xz/gi, 'XZ\'d')
@@ -50,18 +50,23 @@
       Formatter.addMatcher(/size/i, 'byte').add('byte', function(size) {
         var i = Math.floor(Math.log(size) / Math.log(1000));
         return (size / Math.pow(1000, i)).toFixed(2) + (i ? 'kMGTPEZY'[--i] + 'B' : ' bytes');
-      });
-      Formatter.addMatcher(/time/i, 'second').add('second', function(time) { return (time * 1000).toFixed(3) + 'ms'; });
+      }).addStatic('byte', function(size) {
+        return (size / 1000).toFixed(2);
+      }).addStaticLabel('byte', 'kB');
+      Formatter.addMatcher(/time/i, 'second').add('second', function(time) {
+        return (time * 1000).toFixed(3) + 'ms';
+      }).addStatic('second', function(time) {
+        return (time * 1000).toFixed(3);
+      }).addStaticLabel('second', 'ms');
 
       var data = JSON_CONTENT;
-      var benchmarkValues = data.values;
 
       var BenchmarkModel = Backbone.Model.extend({
         parse: function(response, options) {
           return {
             id: response.id,
             languages: _.chain(response.values).map(function(value) { return value.language; }).uniq().value(),
-            formats: _.chain(response.values).map(function(value) { return value.format; }).uniq().value(),
+            formats: _.chain(response.values).map(function(value) { return value.format; }).uniq().sortBy(function(val) { return val; }).value(),
             values: _.filter(response.values, function(value) { return value.id === response.id; })
           };
         }
@@ -158,15 +163,16 @@
           };
         },
         chartData: function() {
+          var type = Formatter.type(this.model.get("id"));
           var data = this.templateData();
           var bestImplementation = _.bind(this.bestImplementation, this);
           return {
-            series: _.chain(data.languages).map(function(lang) { return _.map(data.formats, function(format) { return bestImplementation(format, lang).value; }); }).value(),
+            series: _.chain(data.languages).map(function(lang) { return _.map(data.formats, function(format) { return Formatter.formatStatic(type, bestImplementation(format, lang).value); }); }).value(),
             labels: _.map(data.formats, function(format) { return Humanizer.human(format); })
           };
         },
         bestImplementation: function(format, lang) {
-          return _.chain(this.model.get('values')).filter(function(val) { return val.format === format && val.language === lang; }).sortBy('value').last().value();
+          return _.chain(this.model.get('values')).filter(function(val) { return val.format === format && val.language === lang; }).sortBy('value').first().value() || {value:null};
         }
       });
       var EnvironmentView = RenderingView.extend({
@@ -252,7 +258,7 @@
             <div class="panel-heading" id="main-contents-heading"></div>
             <table class="table" id="main-contents-table"></table>
             <div class="panel-body">
-              <div class="ct-chart ct-perfect-forth" id="main-contents-graph"></div>
+              <div class="ct-chart ct-square" id="main-contents-graph"></div>
             </div>
           </div>
         </div>

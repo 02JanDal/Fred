@@ -1,0 +1,11 @@
+message WonkoVersion {
+	required string version = 1;
+	optional string type = 2;
+	required uint32 time = 3;
+}
+
+message WonkoFile {
+	required string uid = 1;
+	optional string name = 2;
+	repeated WonkoVersion versions = 3;
+}

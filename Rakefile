@@ -135,7 +135,7 @@ task :run => results_json_filename
 
 file 'build/assets/logic.js' => ['assets/logic.coffee'] do
   $general_logger.info 'Building logic.js'
-  Dir.mkdir builddir_base + '/assets'
+  Dir.mkdir builddir_base + '/assets' unless File.exists?(builddir_base + '/assets')
   File.write "#{builddir_base}/assets/logic.js", CoffeeScript.compile(File.read 'assets/logic.coffee')
 end
 

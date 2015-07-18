@@ -3,7 +3,7 @@
 cd $BUILDDIR
 cp -u $COMMONDIR/*.* $SRCDIR/run .
 
-for file in `find -type f -name "*.*" -not -name "*.gz"`
+for file in `find -type f -name "*.*" -not -name "*.gz" -not -name "*.xz" -not -name "*.bzip2"`
 do
   if [[ $file -nt $file.gz ]]; then gzip --stdout $file > $file.gz; fi
   if [[ $file -nt $file.xz ]]; then xz --stdout -9 $file > $file.xz; fi

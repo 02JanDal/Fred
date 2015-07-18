@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'benchmark'
+require_relative 'benchmark'
 require 'oj'
 require 'json'
 require 'yajl'
@@ -14,12 +14,6 @@ puts "environment: json ruby yajl ruby-gem-version-yajl #{Yajl::VERSION}"
 puts "environment: bson ruby bson ruby-gem-version-bson #{BSON::VERSION}"
 puts "environment: msgpack ruby msgpack ruby-gem-version-msgpack #{MessagePack::VERSION}"
 
-def benchmark(format, implementation, id, iterations = 1000, &blk)
-  time = Benchmark.realtime { iterations.times { yield } }
-  seconds = time.to_f / iterations
-  puts "value: #{format} ruby #{implementation || '-'} #{id} #{seconds}"
-end
-
 json_data = File.read 'json.json'
 bson_data = File.read 'bson.bson'
 msgpack_data = File.read 'msgpack.msgpack'
@@ -27,10 +21,6 @@ msgpack_data = File.read 'msgpack.msgpack'
 json_parsed = Oj.load json_data
 bson_parsed = Hash.from_bson StringIO.new bson_data
 msgpack_parsed = MessagePack.unpack msgpack_data
-
-def get_latest(data)
-  data['versions'].map { |v| v['time'].to_i }.max
-end
 
 benchmark('json', 'oj', 'parse_time') { Oj.load json_data }
 benchmark('json', 'oj', 'access_time') { get_latest json_parsed }
