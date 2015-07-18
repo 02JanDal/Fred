@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo "environment: - - - os $(lsb_release -drcs)"
+echo "environment: - - - cpu $(grep -P "^model name" /proc/cpuinfo | head -1 | grep -oP "[^:]*$" | sed 's/^ *//')"
+echo "environment: - - - time $(date -u --rfc-3339=seconds)"

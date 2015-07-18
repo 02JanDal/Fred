@@ -1,0 +1,19 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    bson (1.12.3)
+    bson_ext (1.12.3)
+      bson (~> 1.12.3)
+    msgpack (0.6.1)
+    oj (2.12.9)
+    yajl-ruby (1.2.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bson
+  bson_ext
+  msgpack
+  oj
+  yajl-ruby

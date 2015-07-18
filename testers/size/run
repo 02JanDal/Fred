@@ -1,0 +1,26 @@
+#!/bin/sh
+
+cd $BUILDDIR
+
+echo "environment: - - - gzip-version $(gzip --version | head -1)"
+echo "environment: - - - xz-version $(xz --version | head -1)"
+echo "environment: - - - bzip2-version $(bzip2 --help 2>&1 | head -1 | grep -oP "Version.*")"
+
+for format in `ls | grep -P ".*\..*"`
+do
+	id=$(echo $format | grep -oP "^[^.]*")
+	size=$(du --bytes $format | grep -oP "^[0-9]+")
+	if [[ $format == *".gz" ]]
+	then
+          lang="gz"
+        elif [[ $format == *".xz" ]]
+        then
+          lang="xz"
+        elif [[ $format == *".bzip2" ]]
+        then
+          lang="bzip2"
+        else
+          lang="raw"
+        fi
+	echo "value: $id $lang - size $size"
+done

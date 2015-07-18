@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Fred Results</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.1/chartist.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css"/>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/js/bootstrap.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.1/chartist.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.2.1/backbone.js"></script>
+    <script type="text/javascript" src="assets/logic.js"></script>
+
+    <style>
+      html {
+        position: relative;
+        min-height: 100%;
+      }
+      body {
+        margin-bottom: 60px;
+      }
+      .footer {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 60px;
+        background-color: #f8f8f8;
+        border-color: #e7e7e7;
+        border: 1px solid #e7e7e7;
+      }
+      .footer .text-muted {
+        margin-top: 20px;
+      }
+    </style>
+
+    <script type="text/javascript">
+      Humanizer.add(/json/gi, 'JSON')
+        .add(/bson/gi, 'BSON')
+        .add(/^msgpack$/i, 'MessagePack')
+        .add('Msgpack c', 'msgpack-c')
+        .add('Qmsgpack', 'QMsgPack')
+        .add(/libbson/gi, 'libbson')
+        .add(/gz/gi, 'gzip\'d').add(/gzip'dip/gi, 'GZip')
+        .add(/xz/gi, 'XZ\'d')
+        .add(/cpp/gi, 'C++').add(/c c\+\+/gi, 'C/C++')
+        .add(/cmake/gi, 'CMake')
+        .add(/os/gi, 'OS')
+        .add(/cpu/gi, 'CPU');
+      Formatter.addMatcher(/size/i, 'byte').add('byte', function(size) {
+        var i = Math.floor(Math.log(size) / Math.log(1000));
+        return (size / Math.pow(1000, i)).toFixed(2) + (i ? 'kMGTPEZY'[--i] + 'B' : ' bytes');
+      });
+      Formatter.addMatcher(/time/i, 'second').add('second', function(time) { return (time * 1000).toFixed(3) + 'ms'; });
+
+      var data = JSON_CONTENT;
+      var benchmarkValues = data.values;
+
+      var BenchmarkModel = Backbone.Model.extend({
+        parse: function(response, options) {
+          return {
+            id: response.id,
+            languages: _.chain(response.values).map(function(value) { return value.language; }).uniq().value(),
+            formats: _.chain(response.values).map(function(value) { return value.format; }).uniq().value(),
+            values: _.filter(response.values, function(value) { return value.id === response.id; })
+          };
+        }
+      });
+      var BenchmarkCollection = Backbone.Collection.extend({
+        model: BenchmarkModel,
+        parse: function(response, options) {
+          return _.chain(response.values).groupBy(function(value) { return value.id; }).map(function(value, key) { return {"id": key, "values": value}; }).value();
+        }
+      });
+      var Benchmarks = new BenchmarkCollection;
+
+      var BenchmarkIndexRowView = Backbone.View.extend({
+        tagName: 'a',
+        className: 'list-group-item',
+        id: function() { return 'link_to_benchmark_' + this.model.get("id"); },
+        attributes: function() {
+          return { "href": '#/benchmark/' + this.model.get("id") };
+        },
+        icon: function() {
+          var id = this.model.get("id");
+          var name = null;
+          if (id.match(/time/i) != null) {
+            name = "clock-o";
+          } else if (id.match(/size/i) != null) {
+            name = "file-text-o";
+          } else {
+            return "";
+          }
+          return '<i class="fa fa-' + name + ' fa-fw"/>';
+        },
+        render: function() {
+          this.$el.html(this.icon() + ' ' + Humanizer.human(this.model.get("id")));
+          return this;
+        },
+        initialize: function() {
+          this.listenTo(this.model, 'change', this.render);
+          this.listenTo(this.model, 'destroy', this.remove);
+          this.listenTo(router, 'route', function(route, params) {
+            if (this.model.get("id") == params[0]) {
+              this.$el.addClass("active");
+            } else {
+              this.$el.removeClass("active");
+            }
+          });
+        }
+      });
+      var BenchmarkIndexView = RenderingView.extend({
+        el: '.sidebar-left',
+        templateId: '#benchmark_index_template',
+        initialize: function() {
+          this.listenTo(Benchmarks, 'add', this.addOne);
+          this.listenTo(Benchmarks, 'reset', this.addAll);
+
+          this.render();
+          Benchmarks.fetch();
+        },
+        addOne: function(benchmark) {
+          var view = new BenchmarkIndexRowView({model: benchmark});
+          this.$('.list-group').append(view.render().el);
+        },
+        addAll: function() {
+          Benchmarks.each(this.addOne, this);
+        }
+      });
+      var BenchmarkView = RenderingView.extend({
+        el: '#main-contents-table',
+        templateId: '#benchmark_template',
+        initialize: function() {
+          this.listenTo(this.model, 'change', this.render);
+          this.render();
+        },
+        render: function() {
+          this.$el.html(_.result(this, 'template')(this.templateData()));
+          $('#main-contents-heading').html(Humanizer.human(this.model.get("id")));
+          $('#main-contents-graph').parent().show();
+          new Chartist.Bar($('#main-contents-graph')[0], this.chartData());
+          return this;
+        },
+        templateData: function() {
+          var values = this.model.get('values');
+          return {
+            id: this.model.get('id'),
+            languages: this.model.get('languages'),
+            formats: this.model.get('formats'),
+            maxImplementations: _.chain(values).groupBy('format').mapObject(function(v, k) { return _.chain(v).countBy('language').max().value(); }).value(),
+            value: function(format, lang, index) {
+              return  (_.filter(values, function(val) { return val.format === format && val.language === lang; })[index] || {value:null}).value;
+            },
+            implementation: function(format, lang, index) {
+              var i = (_.filter(values, function(val) { return val.format === format && val.language === lang; })[index] || {implementation:null}).implementation;
+              return i === '' ? null : i;
+            }
+          };
+        },
+        chartData: function() {
+          var data = this.templateData();
+          var bestImplementation = _.bind(this.bestImplementation, this);
+          return {
+            series: _.chain(data.languages).map(function(lang) { return _.map(data.formats, function(format) { return bestImplementation(format, lang).value; }); }).value(),
+            labels: _.map(data.formats, function(format) { return Humanizer.human(format); })
+          };
+        },
+        bestImplementation: function(format, lang) {
+          return _.chain(this.model.get('values')).filter(function(val) { return val.format === format && val.language === lang; }).sortBy('value').last().value();
+        }
+      });
+      var EnvironmentView = RenderingView.extend({
+        el: '#main-contents-table',
+        templateId: '#environment_template',
+        templateData: function() {
+          return {
+            variables: data.environment
+          };
+        },
+        initialize: function() {
+          this.render();
+          this.listenTo(router, 'route', function(route, params) {
+            if (route === 'environment') {
+              $('#link_to_environment').addClass("active");
+            } else {
+              $('#link_to_environment').removeClass("active");
+            }
+          });
+        },
+        render: function() {
+          this.$el.html(_.result(this, 'template')(this.templateData()));
+          $('#main-contents-heading').html("Environment");
+          $('#main-contents-graph').parent().hide();
+          return this;
+        }
+      });
+
+      var Router = Backbone.Router.extend({
+        routes: {
+          "benchmark/:id": "benchmark",
+          "environment": "environment",
+          "*path": "index"
+        }
+      });
+      var router = new Router;
+      router.on("route:benchmark", function(id) {
+        $('.main-contents').show();
+        window.mainView = new BenchmarkView({ model: Benchmarks.get(id) });
+      });
+      router.on("route:environment", function() {
+        $('.main-contents').show();
+        window.mainView = new EnvironmentView({});
+      });
+      router.on("route:index", function() {
+        $('.main-contents').hide();
+      });
+
+      $(document).on('ready', function() {
+        $('.main-contents').hide();
+        var benchmarkIndexView = new BenchmarkIndexView();
+        Backbone.history.start();
+      });
+    </script>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-target" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"/>
+            <span class="icon-bar"/>
+            <span class="icon-bar"/>
+          </button>
+          <a class="navbar-brand" href="#">Fred</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-collapse-target">
+          <ul class="nav navbar-nav">
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="https://github.com/02JanDal/Fred"><span class="fa fa-github fa-lg"/></a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container">
+      <div class="row">
+        <div class="sidebar-left col-lg-3"></div>
+        <div class="main-contents col-lg-6"/>
+          <div class="panel panel-default">
+            <div class="panel-heading" id="main-contents-heading"></div>
+            <table class="table" id="main-contents-table"></table>
+            <div class="panel-body">
+              <div class="ct-chart ct-perfect-forth" id="main-contents-graph"></div>
+            </div>
+          </div>
+        </div>
+        <div class="sidebar-right col-lg-3"></div>
+      </div>
+    </div>
+    <footer class="footer">
+      <div class="container">
+        <p class="text-muted text-center">
+          &copy; 2015 Jan Dalheimer
+          <i class="fa fa-certificate"></i>
+          These benchmarks where run: BENCHMARK_RUN_TIME
+        </p>
+      </div>
+    </footer>
+
+    <script type="text/template" id="benchmark_index_template">
+      <div class="panel panel-default">
+        <div class="panel-heading">All benchmarks</div>
+        <div class="list-group">
+          <a class="list-group-item" href="#/environment" id="link_to_environment"><i class="fa fa-list fa-fw"/> Environment</a>
+        </div>
+      </div>
+    </script>
+
+    <script type="text/template" id="benchmark_template">
+      <table class="table">
+        <tr>
+          <th/>
+          <% languages.forEach(function(lang) { %>
+            <th><%= Humanizer.human(lang || 'Result') %></th>
+          <% }); %>
+        </tr>
+        <% formats.forEach(function(format) { %>
+          <% _.times(maxImplementations[format], function(index) { %>
+            <tr>
+            <% if (index == 0) { %>
+              <th rowspan="<%= maxImplementations[format] %>"><%= Humanizer.human(format) %></th>
+            <% } %>
+            <% languages.forEach(function(lang) { %>
+              <td>
+                <%= Formatter.format(Formatter.type(id), value(format, lang, index)) %>
+                <% if (implementation(format, lang, index) !== null) { %>
+                  (<%= Humanizer.human(implementation(format, lang, index)) %>)
+                <% } %>
+              </td>
+            <% }); %>
+          <% }); %>
+        <% }); %>
+      </table>
+    </script>
+
+    <script type="text/template" id="environment_template">
+      <table class="table">
+        <tr>
+          <th>Key:</th>
+          <th>Value:</th>
+        <tr>
+        <% variables.forEach(function(variable) { %>
+        <tr id="environment_<%= variable.key %>">
+          <td><%= Humanizer.human(variable.key) %></td>
+          <td><%= variable.data %></td>
+        </tr>
+        <% }); %>
+      </table>
+    </script>
+  </body>
+</html>

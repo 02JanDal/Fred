@@ -1,0 +1,16 @@
+#!/bin/sh
+
+dir=$PWD
+cd @QMSGPACK_SRC_DIR@
+qmsgpack_version=$(git rev-parse HEAD)
+cd $dir
+
+echo "environment: - {c,cpp} - cmake-version @CMAKE_VERSION@"
+echo "environment: - c - c-compiler $(@CMAKE_C_COMPILER@ --version | head -1)"
+echo "environment: - cpp - cpp-compiler $(@CMAKE_CXX_COMPILER@ --version | head -1)"
+echo "environment: - {c,cpp} - c-cpp-linker $(@CMAKE_LINKER@ --version | head -1)"
+echo "environment: json cpp rapidjson rapidjson-version @RapidJSON_VERSION@"
+echo "environment: json cpp qt qt5-version @Qt5Core_VERSION@"
+echo "environment: msgpack cpp qmsgpack qmsgpack-version $qmsgpack_version"
+echo "environment: msgpack cpp msgpack-c msgpack-c-version @MSGPACK_VERSION@"
+echo "environment: bson cpp libbson libbson-version @LIBBSON_VERSION@"

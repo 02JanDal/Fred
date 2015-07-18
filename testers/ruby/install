@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cp $COMMONDIR/*.* $SRCDIR/*.rb $SRCDIR/Gemfile .
+bundle install
