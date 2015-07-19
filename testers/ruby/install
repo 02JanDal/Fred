@@ -8,3 +8,6 @@ BEEFCAKE_NAMESPACE=Beefcake protoc --beefcake_out beefcake -I . protobuf.proto
 
 mkdir protobuf || true
 protoc --ruby_out protobuf -I . protobuf.proto
+
+mkdir protocolbuffers || true
+ruby-protoc --ruby_out protocolbuffers -I . protobuf.proto

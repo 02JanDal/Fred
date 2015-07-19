@@ -9,3 +9,7 @@ end
 def get_latest(data)
   data['versions'].map { |v| v['time'].to_i }.max
 end
+
+def get_latest_methodcall(data)
+  data.versions.map { |v| v.time.to_i }.max
+end
