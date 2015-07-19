@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cp -r $SRCDIR/* .
+cp $COMMONDIR/*.proto src/main/proto
+gradle jar
